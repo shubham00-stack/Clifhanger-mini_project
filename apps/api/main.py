@@ -1,5 +1,6 @@
 """FastAPI application entrypoint for Cliffhanger Strength Analyzer."""
 
+from contextlib import asynccontextmanager
 import time
 import uuid
 from fastapi import FastAPI, Request
@@ -15,12 +16,20 @@ settings = get_settings()
 configure_logging(settings.log_level)
 logger = get_logger("api.main")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Cliffhanger Strength Analyzer API initialized in %s mode on %s:%d", settings.app_env, settings.app_host, settings.app_port)
+    yield
+
+
 app = FastAPI(
     title="Cliffhanger Strength Analyzer API",
     description="Enterprise-grade explainable AI platform to evaluate narrative tension, stakes, and cliffhangers across screenplays and stories.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # 1. CORS security restrictions
@@ -91,8 +100,3 @@ app.include_router(benchmarks.router)
 def get_metrics():
     """Exposes Prometheus scrape metrics."""
     return metrics_collector.generate_prometheus_output()
-
-
-@app.on_event("startup")
-async def on_startup():
-    logger.info("Cliffhanger Strength Analyzer API initialized in %s mode on %s:%d", settings.app_env, settings.app_host, settings.app_port)
