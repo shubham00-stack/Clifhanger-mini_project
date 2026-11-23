@@ -27,3 +27,4 @@ apps/web/build/
 .idea/
 .DS_Store
 Thumbs.db
+*.db
