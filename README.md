@@ -87,3 +87,12 @@ python -m evaluation.benchmarks.cli
 ```bash
 pytest tests/ -v
 ```
+
+---
+
+## Repository & Development Synchronization
+- **Primary Upstream:** `https://github.com/shubham00-stack/Clifhanger-mini_project.git`
+- **Origin Fork:** `https://github.com/fivonyt-ai/Clifhanger-mini_project.git`
+- **Default Development Browser:** Google Chrome (`/Applications/Google Chrome.app`)
+- **Automated Test Coverage:** 32 passing tests verifying scoring, MCP servers, metrics, and security.
+
