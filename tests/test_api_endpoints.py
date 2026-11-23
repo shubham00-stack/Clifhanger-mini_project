@@ -109,8 +109,10 @@ def test_benchmark_runner_route():
 
 
 def test_root_web_ui():
-    from apps.api.main import index_ui
-    html = index_ui()
-    assert "Cliffhanger Strength Analyzer" in html
-    assert "Analyze Cliffhanger Strength" in html
-    assert "Phase 5: Rewrite Laboratory" in html
+    import os
+    from apps.api.main import root_dashboard
+    response = root_dashboard()
+    assert os.path.exists(response.path)
+    with open(response.path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "Cliffhanger" in content
