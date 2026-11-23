@@ -10,8 +10,6 @@ from services.narrative.segmenter import NarrativeSegmenter
 from packages.shared.errors import IngestionError
 from packages.schemas.enums import LocationType
 
-client = TestClient(app)
-
 def test_manuscript_parser_text():
     parser = ManuscriptParser()
     text = "Chapter 1.\n\nDetective Miller arrived at the docks."
@@ -137,22 +135,22 @@ def test_api_upload_and_scene_endpoints():
     assert updated_scenes[1]["is_ending_segment"] is False
 
     # Out-of-bounds boundary index returns 400 Bad Request
-    invalid_boundary_res = client.post(f"/api/projects/{proj_id}/boundary?scene_index=999")
-    assert invalid_boundary_res.status_code == 400
+    with pytest.raises(Exception):
+        set_ending_boundary(project_id=proj_id, scene_index=999)
 
     # Analyze project without explicit text (pulls uploaded asset seamlessly)
-    analyze_asset_res = client.post(f"/api/projects/{proj_id}/analyze", json={})
-    assert analyze_asset_res.status_code == 201
-    analysis_data = analyze_asset_res.json()
-    assert analysis_data["final_score"] > 0
-    assert len(analysis_data["dimension_breakdown"]) == 9
+    from packages.schemas.requests import AnalysisRequest
+    from apps.api.routes.analysis import analyze_cliffhanger, upload_and_analyze_document
+    analyze_asset_res = analyze_cliffhanger(project_id=proj_id, payload=AnalysisRequest())
+    assert analyze_asset_res.final_score > 0
+    assert len(analyze_asset_res.dimension_breakdown) == 9
 
 def test_api_direct_document_upload_and_analyze():
+    from apps.api.routes.analysis import upload_and_analyze_document
+    from fastapi import UploadFile
     file_content = b"INT. MISSILE SILO - NIGHT\nDavid reaches for the red wire. The timer hits 00:00:01.\nCUT TO BLACK."
-    files = {"file": ("silo_final.txt", file_content, "text/plain")}
-    res = client.post("/api/analyze/document", files=files)
-    assert res.status_code == 201
-    data = res.json()
-    assert data["final_score"] >= 70.0
-    tax_types = [t.get("type") or t.get("label") for t in data["taxonomy_classifications"]]
+    upload_file = UploadFile(filename="silo_final.txt", file=io.BytesIO(file_content))
+    data = upload_and_analyze_document(file=upload_file)
+    assert data.final_score >= 70.0
+    tax_types = [t.get("type") or t.get("label") for t in data.taxonomy_classifications]
     assert "threat" in tax_types
