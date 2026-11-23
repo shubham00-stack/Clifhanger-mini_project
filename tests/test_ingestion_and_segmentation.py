@@ -2,10 +2,15 @@ import io
 import pytest
 from uuid import uuid4
 from docx import Document
+from pypdf import PdfWriter
+from fastapi.testclient import TestClient
+from apps.api.main import app
 from services.ingestion.parser import ManuscriptParser
 from services.narrative.segmenter import NarrativeSegmenter
 from packages.shared.errors import IngestionError
 from packages.schemas.enums import LocationType
+
+client = TestClient(app)
 
 def test_manuscript_parser_text():
     parser = ManuscriptParser()
