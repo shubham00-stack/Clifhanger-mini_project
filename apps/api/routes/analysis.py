@@ -84,14 +84,14 @@ def get_analysis(analysis_id: UUID):
 
 
 @router.post("/projects/{project_id}/upload", status_code=201)
-async def upload_document(
+def upload_document(
     project_id: UUID,
     file: UploadFile = File(...),
 ):
     """Upload PDF, DOCX, or TXT file, parse text, and perform automatic scene segmentation."""
     parser = ManuscriptParser()
-    content_bytes = await file.read()
-    parsed = parser.parse_file(file.filename, content_bytes)
+    content_bytes = file.file.read()
+    parsed = parser.parse_file(file.filename or "document.txt", content_bytes)
 
     asset_id = uuid4()
     asset_record = {
@@ -149,7 +149,7 @@ def set_ending_boundary(
 
 
 @router.post("/analyze/document", response_model=AnalysisResponse, status_code=201)
-async def upload_and_analyze_document(
+def upload_and_analyze_document(
     file: UploadFile = File(...),
     project_id: Optional[UUID] = None,
     genre: Optional[str] = Form("Thriller"),
@@ -157,7 +157,7 @@ async def upload_and_analyze_document(
     """Direct end-to-end document upload, segmentation, and cliffhanger evaluation."""
     target_project_id = project_id or uuid4()
     parser = ManuscriptParser()
-    content_bytes = await file.read()
+    content_bytes = file.file.read()
     parsed = parser.parse_file(file.filename, content_bytes)
 
     segmenter = NarrativeSegmenter()

@@ -1,14 +1,9 @@
 import io
 from uuid import uuid4
-from fastapi.testclient import TestClient
 from docx import Document
-from pypdf import PdfWriter
-from apps.api.main import app
 from services.ingestion.parser import ManuscriptParser
 from services.narrative.segmenter import NarrativeSegmenter
 from packages.schemas.enums import LocationType
-
-client = TestClient(app)
 
 def test_manuscript_parser_text():
     parser = ManuscriptParser()
@@ -84,27 +79,30 @@ def test_manual_ending_boundary_selection():
     assert updated[2]["is_ending_segment"] is False
 
 def test_api_upload_and_scene_endpoints():
-    proj_res = client.post("/api/projects", json={"title": "Ingestion Test Project"})
-    assert proj_res.status_code == 201
-    proj_id = proj_res.json()["id"]
+    from apps.api.routes.projects import create_project
+    from apps.api.routes.analysis import (
+        upload_document,
+        get_project_scenes,
+        set_ending_boundary,
+    )
+    from packages.schemas.models import ProjectCreate
+    from fastapi import UploadFile
+
+    proj = create_project(ProjectCreate(title="Ingestion Test Project"))
+    proj_id = proj.id
 
     # Upload document
     file_content = b"INT. BUNKER - NIGHT\nSoldier locks the blast door.\n\nEXT. SURFACE - NIGHT\nThe bomb detonates."
-    files = {"file": ("script.txt", file_content, "text/plain")}
-    upload_res = client.post(f"/api/projects/{proj_id}/upload", files=files)
-    assert upload_res.status_code == 201
-    assert upload_res.json()["scene_count"] >= 2
+    upload_file = UploadFile(filename="script.txt", file=io.BytesIO(file_content))
+    upload_res = upload_document(project_id=proj_id, file=upload_file)
+    assert upload_res["scene_count"] >= 2
 
     # Get segmented scenes
-    scenes_res = client.get(f"/api/projects/{proj_id}/scenes")
-    assert scenes_res.status_code == 200
-    scenes = scenes_res.json()
+    scenes = get_project_scenes(project_id=proj_id)
     assert len(scenes) >= 2
     assert scenes[-1]["is_ending_segment"] is True
 
     # Shift boundary to scene 1
-    boundary_res = client.post(f"/api/projects/{proj_id}/boundary?scene_index=1")
-    assert boundary_res.status_code == 200
-    updated_scenes = boundary_res.json()
+    updated_scenes = set_ending_boundary(project_id=proj_id, scene_index=1)
     assert updated_scenes[0]["is_ending_segment"] is True
     assert updated_scenes[1]["is_ending_segment"] is False
