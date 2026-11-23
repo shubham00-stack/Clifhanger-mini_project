@@ -5,7 +5,7 @@ import time
 import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 
 from packages.shared.config import get_settings
 from packages.shared.logging import configure_logging, current_request_id, get_logger
@@ -93,6 +93,12 @@ app.include_router(projects.router)
 app.include_router(analysis.router)
 app.include_router(rewrites.router)
 app.include_router(benchmarks.router)
+
+
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    """Redirect root traffic to interactive Swagger documentation."""
+    return RedirectResponse(url="/docs")
 
 
 # 4. Prometheus observability endpoint
