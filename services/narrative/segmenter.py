@@ -87,9 +87,13 @@ class NarrativeSegmenter:
         boundary_marker: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Allows manual ending boundary selection via scene index or textual snippet."""
+        if not scenes:
+            return scenes
+
+        valid_indices = {s["scene_index"] for s in scenes}
         target_idx = None
 
-        if boundary_scene_index is not None:
+        if boundary_scene_index is not None and boundary_scene_index in valid_indices:
             target_idx = boundary_scene_index
         elif boundary_marker:
             marker_clean = boundary_marker.lower().strip()
@@ -102,7 +106,7 @@ class NarrativeSegmenter:
             for s in scenes:
                 s["is_ending_segment"] = (s["scene_index"] == target_idx)
         else:
-            # Fallback to last scene
+            # Fallback to last scene to ensure an ending segment always exists
             for i, s in enumerate(scenes):
                 s["is_ending_segment"] = (i == len(scenes) - 1)
 

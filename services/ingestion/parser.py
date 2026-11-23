@@ -34,11 +34,20 @@ class ManuscriptParser:
 
     def parse_pdf(self, filename: str, file_bytes: bytes) -> Dict[str, object]:
         """Extracts text, page numbers, and provenance metadata from PDF documents."""
+        if not file_bytes:
+            raise IngestionError(f"PDF document '{filename}' is empty (0 bytes).")
+
         try:
             reader = PdfReader(io.BytesIO(file_bytes))
             safe_name = sanitize_filename(filename)
             pages_data = []
             full_text_parts = []
+
+            if reader.is_encrypted:
+                try:
+                    reader.decrypt("")
+                except Exception as dec_err:
+                    raise IngestionError(f"PDF document '{filename}' is encrypted and password was not provided.") from dec_err
 
             for page_idx, page in enumerate(reader.pages):
                 page_text = page.extract_text() or ""
@@ -61,11 +70,16 @@ class ManuscriptParser:
                 "page_count": len(reader.pages),
                 "pages": pages_data,
             }
+        except IngestionError:
+            raise
         except Exception as e:
             raise IngestionError(f"Failed to parse PDF document {filename}: {str(e)}") from e
 
     def parse_docx(self, filename: str, file_bytes: bytes) -> Dict[str, object]:
         """Extracts paragraphs and styles from Microsoft Word DOCX manuscripts."""
+        if not file_bytes:
+            raise IngestionError(f"DOCX document '{filename}' is empty (0 bytes).")
+
         try:
             doc = Document(io.BytesIO(file_bytes))
             safe_name = sanitize_filename(filename)
@@ -94,6 +108,8 @@ class ManuscriptParser:
                 "paragraphs": paragraphs_data,
                 "page_count": max(1, len(full_text.split()) // 250),
             }
+        except IngestionError:
+            raise
         except Exception as e:
             raise IngestionError(f"Failed to parse DOCX document {filename}: {str(e)}") from e
 

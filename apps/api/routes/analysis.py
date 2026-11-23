@@ -27,11 +27,43 @@ PROJECT_SCENES_STORE: Dict[UUID, List[Dict[str, Any]]] = {}
 @router.post("/projects/{project_id}/analyze", response_model=AnalysisResponse, status_code=201)
 def analyze_cliffhanger(project_id: UUID, payload: AnalysisRequest):
     story_text = payload.text
+    asset_id = payload.asset_id
+
+    # If text is not provided in payload, look up previously uploaded asset for this project
+    if (not story_text or not story_text.strip()) and project_id in PROJECT_ASSETS_STORE:
+        assets = PROJECT_ASSETS_STORE[project_id]
+        if asset_id:
+            matched_asset = next((a for a in assets if a["asset_id"] == asset_id), None)
+            if matched_asset:
+                story_text = matched_asset["raw_text"]
+        elif assets:
+            matched_asset = assets[-1]
+            story_text = matched_asset["raw_text"]
+            asset_id = matched_asset["asset_id"]
+
     if not story_text or not story_text.strip():
-        raise HTTPException(status_code=400, detail="Missing required narrative text payload")
+        raise HTTPException(status_code=400, detail="Missing required narrative text payload or uploaded asset")
 
     segmenter = NarrativeSegmenter()
-    ending_segment = segmenter.extract_ending_segment(story_text)
+
+    # Determine ending segment:
+    # 1. Explicit scene index from payload
+    # 2. Scene marked as ending segment in project's scene store
+    # 3. Dynamic extraction from end of text
+    ending_segment = None
+    if project_id in PROJECT_SCENES_STORE:
+        scenes = PROJECT_SCENES_STORE[project_id]
+        if payload.ending_scene_index is not None:
+            target_scene = next((s for s in scenes if s["scene_index"] == payload.ending_scene_index), None)
+            if target_scene:
+                ending_segment = target_scene["content"]
+        if not ending_segment:
+            ending_scene = next((s for s in scenes if s.get("is_ending_segment")), None)
+            if ending_scene:
+                ending_segment = ending_scene["content"]
+
+    if not ending_segment:
+        ending_segment = segmenter.extract_ending_segment(story_text)
 
     # Initialize model client
     client = NimModelClient()
@@ -142,6 +174,13 @@ def set_ending_boundary(
         raise HTTPException(status_code=404, detail="No scenes found for project")
 
     scenes = PROJECT_SCENES_STORE[project_id]
+    valid_indices = [s["scene_index"] for s in scenes]
+    if scene_index not in valid_indices:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scene index {scene_index} is out of range. Valid scene indices: {valid_indices}",
+        )
+
     segmenter = NarrativeSegmenter()
     updated = segmenter.set_ending_boundary(scenes, boundary_scene_index=scene_index)
     PROJECT_SCENES_STORE[project_id] = updated

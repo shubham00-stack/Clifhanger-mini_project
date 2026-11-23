@@ -1,8 +1,10 @@
 import io
+import pytest
 from uuid import uuid4
 from docx import Document
 from services.ingestion.parser import ManuscriptParser
 from services.narrative.segmenter import NarrativeSegmenter
+from packages.shared.errors import IngestionError
 from packages.schemas.enums import LocationType
 
 def test_manuscript_parser_text():
@@ -25,6 +27,24 @@ def test_manuscript_parser_docx():
     assert res["asset_type"] == "docx"
     assert "cargo jet" in res["raw_text"]
     assert res["word_count"] > 0
+
+def test_manuscript_parser_pdf():
+    parser = ManuscriptParser()
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    buf = io.BytesIO()
+    writer.write(buf)
+    
+    res = parser.parse_pdf("blank.pdf", buf.getvalue())
+    assert res["asset_type"] == "pdf"
+    assert res["page_count"] == 1
+
+def test_manuscript_parser_empty_files_raise_error():
+    parser = ManuscriptParser()
+    with pytest.raises(IngestionError):
+        parser.parse_pdf("empty.pdf", b"")
+    with pytest.raises(IngestionError):
+        parser.parse_docx("empty.docx", b"")
 
 def test_manuscript_parser_universal_routing():
     parser = ManuscriptParser()
@@ -78,6 +98,10 @@ def test_manual_ending_boundary_selection():
     assert updated[1]["is_ending_segment"] is True
     assert updated[2]["is_ending_segment"] is False
 
+    # Out-of-bounds boundary index must fallback safely without clearing all flags
+    fallback_scenes = segmenter.set_ending_boundary(scenes, boundary_scene_index=999)
+    assert any(s["is_ending_segment"] for s in fallback_scenes)
+
 def test_api_upload_and_scene_endpoints():
     from apps.api.routes.projects import create_project
     from apps.api.routes.analysis import (
@@ -106,3 +130,24 @@ def test_api_upload_and_scene_endpoints():
     updated_scenes = set_ending_boundary(project_id=proj_id, scene_index=1)
     assert updated_scenes[0]["is_ending_segment"] is True
     assert updated_scenes[1]["is_ending_segment"] is False
+
+    # Out-of-bounds boundary index returns 400 Bad Request
+    invalid_boundary_res = client.post(f"/api/projects/{proj_id}/boundary?scene_index=999")
+    assert invalid_boundary_res.status_code == 400
+
+    # Analyze project without explicit text (pulls uploaded asset seamlessly)
+    analyze_asset_res = client.post(f"/api/projects/{proj_id}/analyze", json={})
+    assert analyze_asset_res.status_code == 201
+    analysis_data = analyze_asset_res.json()
+    assert analysis_data["final_score"] > 0
+    assert len(analysis_data["dimension_breakdown"]) == 9
+
+def test_api_direct_document_upload_and_analyze():
+    file_content = b"INT. MISSILE SILO - NIGHT\nDavid reaches for the red wire. The timer hits 00:00:01.\nCUT TO BLACK."
+    files = {"file": ("silo_final.txt", file_content, "text/plain")}
+    res = client.post("/api/analyze/document", files=files)
+    assert res.status_code == 201
+    data = res.json()
+    assert data["final_score"] >= 70.0
+    tax_types = [t.get("type") or t.get("label") for t in data["taxonomy_classifications"]]
+    assert "threat" in tax_types
