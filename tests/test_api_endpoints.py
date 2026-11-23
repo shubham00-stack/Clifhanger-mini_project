@@ -106,3 +106,11 @@ def test_benchmark_runner_route():
     assert result.regression_passed is True
     assert result.spearman_correlation > 0.80
     assert result.mean_absolute_error < 15.0
+
+
+def test_root_web_ui():
+    from apps.api.main import index_ui
+    html = index_ui()
+    assert "Cliffhanger Strength Analyzer" in html
+    assert "Analyze Cliffhanger Strength" in html
+    assert "Phase 5: Rewrite Laboratory" in html
