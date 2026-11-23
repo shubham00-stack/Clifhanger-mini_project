@@ -1,5 +1,6 @@
 """Robust JSON auto-repair engine for LLM outputs."""
 
+import ast
 import json
 import re
 from typing import Any, Dict
@@ -10,9 +11,10 @@ def repair_json(raw_text: str) -> Dict[str, Any]:
     Cleans and repairs potentially malformed JSON emitted by LLMs:
     1. Extracts content from markdown code fences (```json ... ```).
     2. Strips leading/trailing conversational text.
-    3. Removes invalid trailing commas before closing braces/brackets.
-    4. Balances unclosed brackets and braces if truncated.
-    5. Safely parses into a Python dictionary.
+    3. Handles Python boolean literals (True, False, None) and single-quoted dict strings via safe AST evaluation.
+    4. Removes invalid trailing commas before closing braces/brackets.
+    5. Balances unclosed brackets and braces if truncated.
+    6. Safely parses into a Python dictionary.
     """
     if not raw_text or not raw_text.strip():
         return {}
@@ -41,13 +43,27 @@ def repair_json(raw_text: str) -> Dict[str, Any]:
     except Exception:
         pass
 
-    # 4. Remove trailing commas before } or ]
+    # 4. Try safe Python AST literal evaluation (handles single quotes, True, False, None)
+    try:
+        res = ast.literal_eval(text)
+        if isinstance(res, dict):
+            return res
+    except Exception:
+        pass
+
+    # 5. Normalize Python booleans and null
+    text = re.sub(r"\bTrue\b", "true", text)
+    text = re.sub(r"\bFalse\b", "false", text)
+    text = re.sub(r"\bNone\b", "null", text)
+
+    # 6. Remove trailing commas before } or ]
     text = re.sub(r",\s*([\}\]])", r"\1", text)
 
-    # 5. Fix common single quotes to double quotes for keys
+    # 7. Fix common single quotes to double quotes for keys and string values
     text = re.sub(r"(?<=\{|\,)\s*\'([a-zA-Z0-9_\-]+)\'\s*:", r'"\1":', text)
+    text = re.sub(r":\s*\'([^\']*)\'", r': "\1"', text)
 
-    # 6. Balance unclosed braces if response was truncated
+    # 8. Balance unclosed braces if response was truncated
     open_curly = text.count("{")
     close_curly = text.count("}")
     if open_curly > close_curly:

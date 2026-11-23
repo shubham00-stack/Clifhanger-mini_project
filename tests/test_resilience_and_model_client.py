@@ -27,6 +27,20 @@ def test_repair_json_truncated_curly_braces():
     assert repaired["nested"]["urgency"] == 88.0
 
 
+def test_repair_json_python_style_dict_and_booleans():
+    raw = "{'is_consistent': True, 'score': None, 'valid': False, 'target': 'urgency'}"
+    repaired = repair_json(raw)
+    assert repaired["is_consistent"] is True
+    assert repaired["score"] is None
+    assert repaired["valid"] is False
+    assert repaired["target"] == "urgency"
+
+
+def test_repair_json_empty_or_whitespace():
+    assert repair_json("") == {}
+    assert repair_json("   ") == {}
+
+
 def test_mock_model_client_deterministic_keywords():
     client = MockModelClient()
 

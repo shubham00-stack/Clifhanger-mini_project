@@ -18,6 +18,9 @@ class NarrativeSegmenter:
         Splits text into (heading, content, location_type).
         Falls back to paragraph blocks if no formal screenplay headers exist.
         """
+        if not text or not text.strip():
+            return [("ENDING CUTOFF", "", LocationType.OTHER)]
+
         lines = text.strip().split("\n")
         scenes: List[Tuple[str, List[str], LocationType]] = []
         current_heading = "SCENE 1"
@@ -59,6 +62,8 @@ class NarrativeSegmenter:
 
     def extract_ending_segment(self, text: str, max_words: int = 250) -> str:
         """Extracts the final narrative segment up to the cutoff boundary."""
+        if not text or not text.strip():
+            return ""
         words = text.strip().split()
         if len(words) <= max_words:
             return text.strip()

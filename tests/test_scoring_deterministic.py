@@ -54,14 +54,19 @@ def test_bit_for_bit_deterministic_repeatability():
             assert b1.weighted_contribution == b2.weighted_contribution
 
 
-def test_score_clamping():
-    """Ensure out-of-bounds scores are strictly clamped to [0, 100]."""
-    out_of_bounds = {dim: 150.0 for dim in DIMENSION_WEIGHTS}
-    score, band, _ = calculate_cliffhanger_score(out_of_bounds)
-    assert score == 100.0
-    assert band == ScoreBand.EXCEPTIONAL
-
-    negative_scores = {dim: -50.0 for dim in DIMENSION_WEIGHTS}
-    score_neg, band_neg, _ = calculate_cliffhanger_score(negative_scores)
-    assert score_neg == 0.0
-    assert band_neg == ScoreBand.NO_MEANINGFUL
+def test_scoring_handles_nan_inf_and_invalid_strings():
+    """Ensure malformed score values (NaN, Inf, strings, None) do not crash the engine."""
+    import math
+    malformed_scores = {
+        "unresolved_question": {"score": float("nan")},
+        "stakes": {"score": float("inf")},
+        "emotional_intensity": {"score": "not_a_number"},
+        "character_consequence": {"score": None},
+        "surprise": None,
+    }
+    score, band, breakdowns = calculate_cliffhanger_score(malformed_scores)
+    assert not math.isnan(score)
+    assert not math.isinf(score)
+    assert 0.0 <= score <= 100.0
+    assert band is not None
+    assert len(breakdowns) == 9

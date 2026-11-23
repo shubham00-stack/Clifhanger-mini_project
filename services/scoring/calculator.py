@@ -1,6 +1,7 @@
 """Deterministic Cliffhanger Score Calculation Engine & Score Band Mapper."""
 
-from typing import Dict, List, Tuple
+import math
+from typing import Any, Dict, List, Tuple
 from packages.schemas.dimensions import (
     DIMENSION_WEIGHTS,
     DIMENSION_DEFINITIONS,
@@ -12,6 +13,19 @@ from packages.schemas.enums import ScoreBand
 from packages.shared.logging import get_logger
 
 logger = get_logger("scoring.calculator")
+
+
+def _safe_float(val: Any, default: float = 50.0) -> float:
+    """Safely parses float handling None, NaN, Infinity, and invalid string inputs."""
+    if val is None:
+        return default
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
+    except (ValueError, TypeError):
+        return default
 
 
 def map_score_to_band(score: float) -> ScoreBand:
@@ -61,17 +75,17 @@ def calculate_cliffhanger_score(
         else:
             val = dimension_scores[dim_name]
             if isinstance(val, DimensionScoreInput):
-                raw_score = float(val.score)
-                confidence = float(val.confidence)
+                raw_score = _safe_float(val.score, 50.0)
+                confidence = _safe_float(val.confidence, 1.0)
                 explanation = val.explanation
                 missing_info = val.missing_info
             elif isinstance(val, dict):
-                raw_score = float(val.get("score", 50.0))
-                confidence = float(val.get("confidence", 1.0))
+                raw_score = _safe_float(val.get("score"), 50.0)
+                confidence = _safe_float(val.get("confidence"), 1.0)
                 explanation = str(val.get("explanation", ""))
                 missing_info = str(val.get("missing_info", ""))
             else:
-                raw_score = float(val)
+                raw_score = _safe_float(val, 50.0)
                 confidence = 1.0
                 explanation = ""
                 missing_info = ""
