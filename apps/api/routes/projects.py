@@ -9,7 +9,16 @@ from packages.shared.security import enforce_project_tenancy
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
 # In-memory storage for demonstration & standalone operation
-PROJECTS_STORE: Dict[UUID, ProjectRead] = {}
+DEFAULT_PROJECT_ID = UUID("00000000-0000-0000-0000-000000000001")
+PROJECTS_STORE: Dict[UUID, ProjectRead] = {
+    DEFAULT_PROJECT_ID: ProjectRead(
+        id=DEFAULT_PROJECT_ID,
+        title="Arctic Vault Climax",
+        description="Bio-vault emergency containment breach screenplay scene.",
+        genre="Sci-Fi Thriller",
+        target_audience="General",
+    )
+}
 
 
 @router.post("", response_model=ProjectRead, status_code=201)

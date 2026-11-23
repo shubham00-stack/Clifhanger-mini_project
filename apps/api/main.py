@@ -1,11 +1,12 @@
 """FastAPI application entrypoint for Cliffhanger Strength Analyzer."""
 
 from contextlib import asynccontextmanager
+import os
 import time
 import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 
 from packages.shared.config import get_settings
 from packages.shared.logging import configure_logging, current_request_id, get_logger
@@ -96,8 +97,14 @@ app.include_router(benchmarks.router)
 
 
 @app.get("/", include_in_schema=False)
-def root_redirect():
-    """Redirect root traffic to interactive Swagger documentation."""
+@app.get("/dashboard", include_in_schema=False)
+def root_dashboard():
+    """Serve the interactive web UI dashboard, fallback to Swagger docs."""
+    index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "apps", "web", "index.html")
+    if not os.path.exists(index_path):
+        index_path = os.path.join("apps", "web", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return RedirectResponse(url="/docs")
 
 

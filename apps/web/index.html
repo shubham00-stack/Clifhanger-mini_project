@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cliffhanger Strength Analyzer — NVIDIA NIM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .glass-card { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .score-badge-exceptional { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .score-badge-very-strong { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+    .score-badge-strong { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .score-badge-moderate { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .score-badge-weak { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-gray-800 bg-gray-950/90 sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+        <i class="fa-solid fa-bolt-lightning text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg text-white flex items-center gap-2">
+          Cliffhanger Strength Analyzer
+          <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full mono">NVIDIA NIM</span>
+        </h1>
+        <p class="text-xs text-gray-400">Deterministic Mathematical Scoring & Explainable Narrative AI</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="text-xs px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 mono flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Production Ready
+      </span>
+      <a href="/docs" target="_blank" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1">
+        <i class="fa-solid fa-book-open"></i> Swagger API
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Input Form (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col space-y-4">
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-800 space-x-2">
+        <button id="tab-btn-text" onclick="switchTab('text')" class="px-4 py-2 text-sm font-medium border-b-2 border-emerald-500 text-emerald-400">
+          <i class="fa-solid fa-pen-nib mr-1.5"></i> Text Input
+        </button>
+        <button id="tab-btn-upload" onclick="switchTab('upload')" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200">
+          <i class="fa-solid fa-file-arrow-up mr-1.5"></i> Document Upload (PDF/DOCX)
+        </button>
+      </div>
+
+      <!-- Text Input Tab Pane -->
+      <div id="tab-text" class="glass-card rounded-2xl p-5 flex flex-col space-y-4 flex-1 shadow-xl">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Genre</label>
+            <select id="project-genre" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+              <option value="Sci-Fi Thriller">Sci-Fi Thriller</option>
+              <option value="Crime / Mystery">Crime / Mystery</option>
+              <option value="Psychological Drama">Psychological Drama</option>
+              <option value="Action Adventure">Action Adventure</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Quick Presets</label>
+            <select id="preset-selector" onchange="applyPreset()" class="w-full bg-gray-900/90 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+              <option value="high">Preset: High Stakes Threat</option>
+              <option value="mystery">Preset: Revelation / Mystery</option>
+              <option value="weak">Preset: Flat / Closed Ending</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex-1 flex flex-col">
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Screenplay / Story Content</label>
+            <span id="word-count" class="text-xs text-gray-500 mono">0 words</span>
+          </div>
+          <textarea id="story-content" class="w-full flex-1 min-h-[260px] bg-gray-900/90 border border-gray-700 rounded-xl p-3.5 text-sm text-gray-100 mono leading-relaxed focus:outline-none focus:border-emerald-500 resize-none"></textarea>
+        </div>
+
+        <button id="analyze-btn" onclick="runAnalysis()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-emerald-700/30 transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Evaluate Cliffhanger Strength</span>
+        </button>
+      </div>
+
+      <!-- Upload Tab Pane -->
+      <div id="tab-upload" class="glass-card rounded-2xl p-5 flex flex-col space-y-4 flex-1 shadow-xl hidden">
+        <div class="border-2 border-dashed border-gray-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:border-emerald-500 transition cursor-pointer" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt" onchange="handleFileSelect(event)">
+          <div class="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center mb-3 text-emerald-400">
+            <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+          </div>
+          <p class="text-sm font-semibold text-gray-200">Click to upload or drag & drop</p>
+          <p class="text-xs text-gray-500 mt-1">Supports PDF, DOCX, and plain text manuscripts</p>
+          <span id="selected-file-name" class="mt-3 text-xs bg-gray-800 text-emerald-400 px-3 py-1 rounded-full mono hidden"></span>
+        </div>
+
+        <button id="upload-btn" onclick="uploadAndAnalyzeDocument()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-microchip"></i>
+          <span>Ingest & Evaluate Document</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Column: Results & Analytics (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col space-y-5">
+
+      <!-- Overall Score Card -->
+      <div class="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-wider font-semibold text-gray-400">Overall Cliffhanger Strength Score</p>
+            <div class="flex items-baseline space-x-3 mt-1">
+              <span id="final-score" class="text-5xl font-extrabold tracking-tight text-white">--</span>
+              <span class="text-gray-500 text-sm">/ 100</span>
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+              <span id="score-band-badge" class="px-3 py-1 rounded-full text-xs font-semibold score-badge-strong">Awaiting Evaluation</span>
+              <span class="text-xs text-gray-500 mono">Sum(wi * Di) Deterministic</span>
+            </div>
+          </div>
+
+          <div class="w-24 h-24 rounded-2xl bg-gray-900 border border-gray-800 flex flex-col items-center justify-center p-2 text-center">
+            <i class="fa-solid fa-brain text-emerald-400 text-2xl mb-1"></i>
+            <span class="text-[10px] text-gray-400 mono uppercase">Formula Verified</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Label Taxonomy Pills -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl">
+        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-tags text-cyan-400"></i> Cliffhanger Taxonomy Classifications (12-Class)
+        </h3>
+        <div id="taxonomy-container" class="flex flex-wrap gap-2">
+          <span class="text-xs text-gray-500 italic">No taxonomy classified yet. Click evaluate to detect narrative patterns.</span>
+        </div>
+      </div>
+
+      <!-- 9 Deterministic Dimensions -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl">
+        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-chart-simple text-emerald-400"></i> 9-Dimension Breakdown
+          </span>
+          <span class="text-[11px] text-gray-500 mono">Weights Sum = 100%</span>
+        </h3>
+        <div id="dimensions-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Verified Citations & Evidence Table -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl">
+        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-quote-left text-teal-400"></i> Grounded Narrative Evidence & Quotes
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-800 text-gray-400 mono">
+                <th class="pb-2">Location</th>
+                <th class="pb-2">Quote Excerpt</th>
+                <th class="pb-2">Relevance</th>
+              </tr>
+            </thead>
+            <tbody id="evidence-table-body" class="divide-y divide-gray-800/50">
+              <tr>
+                <td colspan="3" class="py-4 text-center text-gray-500 italic">Verified quotes will appear here after analysis.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rewrite Lab Section -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Rewrite Laboratory
+          </h3>
+          <button id="rewrite-btn" onclick="requestRewrite()" class="text-xs bg-amber-600 hover:bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50">
+            Generate Rewrite
+          </button>
+        </div>
+        <div id="rewrite-box" class="bg-gray-900/80 p-4 rounded-xl border border-gray-800 text-xs text-gray-300 italic min-h-[60px] flex items-center justify-center text-center">
+          Evaluate a story snippet first, then generate a targeted rewrite to elevate weak dimensions.
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const PRESETS = {
+      high: `INT. SUBTERRANEAN MISSILE SILO - NIGHT\n\nDavid frantically enters the override cipher into the command console. Sweat stings his eyes. The digital display flashes: 00:00:07... 00:00:06...\n\nAcross the catwalk, Sarah lies wounded against the blast doors. The sound of heavy mechanical boots rings through the ventilation shaft.\n\nSARAH\nDavid, don't look at me! Cut the primary uplink or the entire Eastern Seaboard goes dark!\n\nDavid's hand hovers over the severed hydraulic line. Behind him, the titanium hatch begins to buckle inward with a deafening screech of bending steel.\n\nThe console emits a high-pitched confirmation chime: CIPHER ACCEPTED. AWAITING FINAL AUTHORIZATION.\n\nThen, the radio in his ear crackles to life with the voice of the President.\n\nVOICE ON RADIO\nDavid... step away from the terminal. That wasn't an accident. We ordered it.`,
+      mystery: `EXT. RAIN-SLICKED ALLEY - MIDNIGHT\n\nDetective Miller crouched beside the discarded leather briefcase. Rain drummed against the iron fire escape above.\n\nHe popped the brass latches. Inside lay a single manila folder stamped with the seal of the Department of Internal Affairs from 1994.\n\nInside was a photograph: Miller himself, twenty years younger, standing on the tarmac next to the missing ambassador.\n\nExcept Miller had never been to Geneva. He had never met the ambassador. And the signature authorizing the diplomatic visa was unmistakably his own handwritten cursive.`,
+      weak: `INT. APARTMENT KITCHEN - MORNING\n\nArthur finished his morning tea and wiped the counter with a yellow sponge. He looked out the kitchen window at the rain falling softly on the hydrangea bushes. He turned off the kitchen lamp, gathered his umbrella from the coat rack, and closed the wooden front door behind him as he headed for the bus stop.`
+    };
+
+    let currentAnalysisId = null;
+
+    function applyPreset() {
+      const type = document.getElementById('preset-selector').value;
+      const text = PRESETS[type] || '';
+      document.getElementById('story-content').value = text;
+      updateWordCount();
+    }
+
+    function updateWordCount() {
+      const text = document.getElementById('story-content').value.trim();
+      const count = text ? text.split(/\s+/).length : 0;
+      document.getElementById('word-count').innerText = `${count} words`;
+    }
+
+    document.getElementById('story-content').addEventListener('input', updateWordCount);
+
+    function switchTab(tab) {
+      if (tab === 'text') {
+        document.getElementById('tab-text').classList.remove('hidden');
+        document.getElementById('tab-upload').classList.add('hidden');
+        document.getElementById('tab-btn-text').className = "px-4 py-2 text-sm font-medium border-b-2 border-emerald-500 text-emerald-400";
+        document.getElementById('tab-btn-upload').className = "px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200";
+      } else {
+        document.getElementById('tab-text').classList.add('hidden');
+        document.getElementById('tab-upload').classList.remove('hidden');
+        document.getElementById('tab-btn-upload').className = "px-4 py-2 text-sm font-medium border-b-2 border-cyan-500 text-cyan-400";
+        document.getElementById('tab-btn-text').className = "px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200";
+      }
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const badge = document.getElementById('selected-file-name');
+        badge.innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        badge.classList.remove('hidden');
+      }
+    }
+
+    async function runAnalysis() {
+      const text = document.getElementById('story-content').value.trim();
+      if (!text) {
+        alert('Please enter or select a story excerpt to evaluate.');
+        return;
+      }
+
+      const btn = document.getElementById('analyze-btn');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Evaluating Cliffhanger...`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/projects/00000000-0000-0000-0000-000000000001/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        currentAnalysisId = data.analysis_id;
+        renderResults(data);
+      } catch (err) {
+        console.error(err);
+        alert('Analysis error: ' + err.message);
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-chart-line mr-2"></i> Evaluate Cliffhanger Strength`;
+        btn.disabled = false;
+      }
+    }
+
+    async function uploadAndAnalyzeDocument() {
+      const fileInput = document.getElementById('file-input');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Please select a PDF, DOCX, or TXT file to upload.');
+        return;
+      }
+
+      const btn = document.getElementById('upload-btn');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Ingesting & Analyzing...`;
+      btn.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('genre', document.getElementById('project-genre').value || 'Thriller');
+
+        const res = await fetch('/api/analyze/document', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) throw new Error(`Upload error status: ${res.status}`);
+        const data = await res.json();
+        currentAnalysisId = data.analysis_id;
+        renderResults(data);
+      } catch (err) {
+        console.error(err);
+        alert('Upload failed: ' + err.message);
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-microchip mr-2"></i> Ingest & Evaluate Document`;
+        btn.disabled = false;
+      }
+    }
+
+    async function requestRewrite() {
+      if (!currentAnalysisId) {
+        alert('Please run an evaluation first.');
+        return;
+      }
+
+      const btn = document.getElementById('rewrite-btn');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Rewriting...`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/analyses/${currentAnalysisId}/rewrites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            analysis_id: currentAnalysisId,
+            target_dimension: 'urgency',
+            style: 'intensified'
+          })
+        });
+
+        if (!res.ok) throw new Error(`Rewrite request failed: ${res.status}`);
+        const rw = await res.json();
+        document.getElementById('rewrite-box').innerHTML = `
+          <div class="text-left w-full space-y-2">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-1.5">
+              <span class="text-emerald-400 font-semibold uppercase tracking-wider text-[11px]">Elevated Rewrite • ${rw.target_dimension}</span>
+              <span class="text-amber-400 mono font-bold text-xs">Predicted Score: ${rw.predicted_score} (+${rw.score_delta})</span>
+            </div>
+            <p class="text-gray-100 font-mono text-xs leading-relaxed">"${rw.content}"</p>
+          </div>
+        `;
+      } catch (e) {
+        alert('Rewrite error: ' + e.message);
+      } finally {
+        btn.innerHTML = `Generate Rewrite`;
+        btn.disabled = false;
+      }
+    }
+
+    function renderResults(data) {
+      // Final Score & Badge
+      const scoreEl = document.getElementById('final-score');
+      scoreEl.innerText = Number(data.final_score).toFixed(1);
+
+      const badge = document.getElementById('score-band-badge');
+      badge.innerText = data.score_band;
+      badge.className = 'px-3 py-1 rounded-full text-xs font-semibold ';
+      if (data.final_score >= 90) badge.classList.add('score-badge-exceptional');
+      else if (data.final_score >= 80) badge.classList.add('score-badge-very-strong');
+      else if (data.final_score >= 65) badge.classList.add('score-badge-strong');
+      else if (data.final_score >= 50) badge.classList.add('score-badge-moderate');
+      else badge.classList.add('score-badge-weak');
+
+      // Taxonomy Pills
+      const taxContainer = document.getElementById('taxonomy-container');
+      taxContainer.innerHTML = '';
+      const tags = data.taxonomy_classifications || [];
+      if (tags.length > 0) {
+        tags.forEach(t => {
+          const pill = document.createElement('div');
+          pill.className = "flex items-center space-x-1.5 bg-gray-800 border border-gray-700 px-3 py-1 rounded-lg text-xs";
+          const typeName = t.type || t.label || 'cliffhanger';
+          pill.innerHTML = `
+            <span class="font-semibold text-emerald-400 capitalize">${typeName}</span>
+            <span class="text-gray-500 mono text-[10px]">${(t.confidence * 100).toFixed(0)}%</span>
+          `;
+          taxContainer.appendChild(pill);
+        });
+      }
+
+      // Dimensions
+      const dimContainer = document.getElementById('dimensions-container');
+      dimContainer.innerHTML = '';
+      const breakdowns = data.dimension_breakdown || [];
+      breakdowns.forEach(d => {
+        const item = document.createElement('div');
+        item.className = "bg-gray-900/60 p-3 rounded-xl border border-gray-800";
+        const score = d.score || 0;
+        const weightPercent = (d.weight * 100).toFixed(0);
+        item.innerHTML = `
+          <div class="flex justify-between items-center text-xs mb-1.5">
+            <span class="font-medium text-gray-300 capitalize">${(d.dimension_name || '').replace(/_/g, ' ')}</span>
+            <div class="flex items-center space-x-2 mono">
+              <span class="text-[10px] text-gray-500">${weightPercent}%</span>
+              <span class="font-bold text-emerald-400">${score.toFixed(0)}/100</span>
+            </div>
+          </div>
+          <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500" style="width: ${score}%"></div>
+          </div>
+        `;
+        dimContainer.appendChild(item);
+      });
+
+      // Evidence Table
+      const tbody = document.getElementById('evidence-table-body');
+      tbody.innerHTML = '';
+      const quotes = data.evidence_quotes || [];
+      if (quotes.length > 0) {
+        quotes.forEach(ev => {
+          const row = document.createElement('tr');
+          row.className = "hover:bg-gray-800/30";
+          row.innerHTML = `
+            <td class="py-2.5 text-gray-400 mono text-[11px]">${ev.location || 'Ending Scene'}</td>
+            <td class="py-2.5 text-gray-200 italic max-w-xs truncate">"${ev.quote || ''}"</td>
+            <td class="py-2.5 mono text-emerald-400 text-[11px]">${((ev.relevance || 1.0) * 100).toFixed(0)}%</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+    }
+
+    // Initialize with high stakes preset
+    applyPreset();
+  </script>
+</body>
+</html>
