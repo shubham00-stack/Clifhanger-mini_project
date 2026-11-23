@@ -1,7 +1,8 @@
+from __future__ import annotations
 """Deterministic Cliffhanger Score Calculation Engine & Score Band Mapper."""
 
 import math
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 from packages.schemas.dimensions import (
     DIMENSION_WEIGHTS,
     DIMENSION_DEFINITIONS,
@@ -54,7 +55,7 @@ def map_score_to_band(score: float) -> ScoreBand:
 
 
 def calculate_cliffhanger_score(
-    dimension_scores: Dict[str, DimensionScoreInput | Dict[str, float | str]],
+    dimension_scores: Dict[str, Union[DimensionScoreInput, Dict[str, Union[float, str]]]],
 ) -> Tuple[float, ScoreBand, List[DimensionScoreBreakdown]]:
     """
     Calculates deterministic weighted cliffhanger score:
