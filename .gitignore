@@ -6,8 +6,14 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
 .env
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # Pytest & Coverage
 .pytest_cache/
