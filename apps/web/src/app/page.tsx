@@ -29,7 +29,9 @@ interface AnalysisResult {
 
 export default function Dashboard() {
   const [inputText, setInputText] = useState(
-    `INT. ARCTIC VAULT - NIGHT\\n\\nDr. Marcus Kane reached the bio-vault emergency console with his hands shaking in chemical burns. Behind him, the reinforced blast glass began spider-webbing under hydraulic pressure. He slotted the master override key, but the screen turned crimson. The automated defense voice echoed: 'Primary quarantine breached. Complete thermal purge initiated. T-minus ten seconds. Escape pods jettisoned.'`
+    `INT. ARCTIC VAULT - NIGHT
+
+Dr. Marcus Kane reached the bio-vault emergency console with his hands shaking in chemical burns. Behind him, the reinforced blast glass began spider-webbing under hydraulic pressure. He slotted the master override key, but the screen turned crimson. The automated defense voice echoed: 'Primary quarantine breached. Complete thermal purge initiated. T-minus ten seconds. Escape pods jettisoned.'`
   );
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
