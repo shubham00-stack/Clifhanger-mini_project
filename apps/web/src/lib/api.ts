@@ -62,6 +62,8 @@ export interface SceneRecord {
   is_ending_segment: boolean;
 }
 
+export const DEFAULT_PROJECT_ID = "00000000-0000-0000-0000-000000000001";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export class ApiClient {
@@ -125,7 +127,7 @@ export class ApiClient {
     targetDimension: string = "urgency",
     style: string = "intensified"
   ): Promise<RewriteResult> {
-    return this.request<RewriteResult>(`/api/analyses/${analysisId}/rewrites`, {
+    return this.request<RewriteResult>(`/api/analyses/${analysisId}/rewrite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Cliffhanger Strength Analyzer",
-  description: "Enterprise-grade explainable AI platform evaluating narrative tension, stakes, and cliffhangers.",
+  title: "Cliffhanger Strength Analyzer — Narrative Suspense & Continuity Workspace",
+  description: "Enterprise-grade explainable AI workspace evaluating narrative tension, stakes, and cliffhanger cutoffs across 9 calibrated dimensions.",
 };
 
 export default function RootLayout({
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased">
+    <html lang="en" className="dark">
+      <body className="bg-[#0d0d0f] text-[#ececee] min-h-screen antialiased select-auto">
         {children}
       </body>
     </html>
