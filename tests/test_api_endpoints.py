@@ -106,3 +106,13 @@ def test_benchmark_runner_route():
     assert result.regression_passed is True
     assert result.spearman_correlation > 0.80
     assert result.mean_absolute_error < 15.0
+
+
+def test_root_web_ui():
+    import os
+    from apps.api.main import root_dashboard
+    response = root_dashboard()
+    assert os.path.exists(response.path)
+    with open(response.path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "Cliffhanger" in content
