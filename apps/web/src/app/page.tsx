@@ -223,6 +223,7 @@ export default function CodexCliffhangerWorkspace() {
   const [targetDim, setTargetDim] = useState<string>("urgency");
   const [rewriting, setRewriting] = useState(false);
   const [rewriteResult, setRewriteResult] = useState<RewriteResult | null>(null);
+  const [analysisRewrites, setAnalysisRewrites] = useState<Record<string, RewriteResult>>({});
   const [isRewriteDemo, setIsRewriteDemo] = useState(false);
   const [rewriteError, setRewriteError] = useState<string | null>(null);
 
@@ -323,7 +324,7 @@ export default function CodexCliffhangerWorkspace() {
     setInputText(item.inputText);
     setSceneTitle(item.title);
     setResult(item.result);
-    setRewriteResult(null);
+    setRewriteResult(analysisRewrites[item.id] || null);
     setSelectedQuote(null);
     setQuoteMatchStatus(null);
     setSidebarOpen(false);
@@ -634,11 +635,12 @@ export default function CodexCliffhangerWorkspace() {
 
     if (isLive) {
       try {
-        const rewrite = await ApiClient.requestRewrite(result.analysis_id, targetDim, "intensified");
+        const rewrite = await ApiClient.requestRewrite(result.analysis_id, targetDim, "intensified", inputText);
         setRewriteResult(rewrite);
+        setAnalysisRewrites((prev) => ({ ...prev, [result.analysis_id]: rewrite }));
         setIsRewriteDemo(false);
-      } catch {
-        simulateDemoRewrite(targetDim);
+      } catch (err: any) {
+        setRewriteError(err.message || "Failed to generate alternative ending.");
       } finally {
         setRewriting(false);
       }
@@ -651,32 +653,33 @@ export default function CodexCliffhangerWorkspace() {
   const simulateDemoRewrite = (dimension: string) => {
     setIsRewriteDemo(true);
 
-    const baselineScore = result?.final_score || 75.0;
-    const boost = 10.4;
+    const baselineScore = result?.final_score || 64.0;
+    const boost = 14.5;
     const predicted = Math.min(99.0, Number((baselineScore + boost).toFixed(1)));
+    const lower = inputText.toLowerCase();
 
     let rewriteBody = "";
-    switch (dimension) {
-      case "urgency":
-        rewriteBody = `${inputText.trim()}\n\nAcross the observation deck, Director Holloway lowered his headset and killed the primary backup generator. The emergency strobe shifted from amber to violent strobe crimson: 'CRITICAL FAILURE: 00:03 SECONDS REMAINING.'`;
-        break;
-      case "stakes":
-        rewriteBody = `${inputText.trim()}\n\nIf the inner containment seal fractured, the airborne bio-agent would hit the ventilation shaft in ninety seconds—venting across seventy thousand civilian hab-modules in the lower quadrant.`;
-        break;
-      case "unresolved_question":
-        rewriteBody = `${inputText.trim()}\n\nAs the override terminal went dead, an automated audio log flickered on: 'Marcus, do not engage the seal. They placed the trigger on the outside.' Footsteps clicked softly in the dark behind him.`;
-        break;
-      case "surprise":
-        rewriteBody = `${inputText.trim()}\n\nMarcus keyed the emergency bypass, but the defense voice didn't speak in standard synthesized tones. It spoke in his own voice, recorded three years ago: 'Lockdown confirmed, Marcus. You knew this day would come.'`;
-        break;
-      case "emotional_intensity":
-        rewriteBody = `${inputText.trim()}\n\nMarcus pressed his scorched palms against the blistering glass. Through the static on his radio, his sister's voice faded into white noise: 'Marcus, tell me you made it out...' Then the carrier signal flatlined.`;
-        break;
-      default:
-        rewriteBody = `${inputText.trim()}\n\nThe sirens screamed into an unbearable crescendo as the hydraulic clamps released with a deafening thunderclap.`;
+    if (lower.includes("arjun") || lower.includes("meera") || lower.includes("door 17")) {
+      if (dimension === "urgency") {
+        rewriteBody = `${inputText.trim()}\n\nArjun stepped back from the reinforced glass of Door 17 as the monitor flared crimson. Dr. Meera's security badge slipped from his fingers—the terminal access log showed she had already logged into the inner laboratory sixty seconds before he arrived.`;
+      } else if (dimension === "stakes") {
+        rewriteBody = `${inputText.trim()}\n\nArjun gripped the cold steel handle of Door 17 as the thermal seal disengaged. The duplicate identity card inside the terminal wasn't an unauthorized counterfeit—it belonged to him, stamped with tomorrow's expiration date.`;
+      } else {
+        rewriteBody = `${inputText.trim()}\n\nDr. Meera reached toward the manual release valve for Door 17, but froze mid-motion. 'Arjun,' she whispered, staring at the bioscan readout on the console, 'if you are standing right in front of me... whose voice is answering from the intercom inside the vault?'`;
+      }
+    } else if (lower.includes("riya") || lower.includes("aarav") || lower.includes("mother") || lower.includes("blue box")) {
+      if (dimension === "urgency") {
+        rewriteBody = `${inputText.trim()}\n\nA sudden silence gripped the room as Riya's hands trembled against the brass clasp of the blue box. Aarav stepped forward, pointing at the heart monitor as the digital pulse line flattened for two agonizing seconds before catching again.`;
+      } else if (dimension === "stakes") {
+        rewriteBody = `${inputText.trim()}\n\nRiya pressed the folded letter into Aarav's hand, her voice barely a whisper. 'The memory restoration didn't fail,' she said, looking down at their mother. 'She remembers everything—including why she had our childhood records erased.'`;
+      } else {
+        rewriteBody = `${inputText.trim()}\n\nAarav lifted the silver frame from the hospital bedside table, turning the photograph toward the light. Standing directly behind their mother's smiling portrait was a third figure holding the identical blue box—someone neither of them had ever seen.`;
+      }
+    } else {
+      rewriteBody = `${inputText.trim()}\n\nA heavy silence settled over the room as the realization took hold. The dilemma wasn't what had just transpired—it was what had to be done next.`;
     }
 
-    setRewriteResult({
+    const demoRewrite: RewriteResult = {
       rewrite_id: "demo-rewrite-" + Math.random().toString(36).substring(2, 9),
       analysis_id: result?.analysis_id || "demo-analysis",
       target_dimension: dimension,
@@ -685,8 +688,13 @@ export default function CodexCliffhangerWorkspace() {
       score_delta: boost,
       content: rewriteBody,
       is_consistent: true,
-      validation_critique: "Maintains established continuity while heightening immediate peril and unresolved cutoff tension.",
-    });
+      validation_critique: "Maintains established scene facts and character continuity.",
+    };
+
+    setRewriteResult(demoRewrite);
+    if (result?.analysis_id) {
+      setAnalysisRewrites((prev) => ({ ...prev, [result.analysis_id]: demoRewrite }));
+    }
   };
 
   const handleCopyRewrite = async () => {
@@ -1530,6 +1538,17 @@ ${inputText}
 
                       {rewriteError && <p className="text-xs text-rose-400">{rewriteError}</p>}
                     </div>
+
+                    {/* Empty State when no alternative has been drafted for this analysis */}
+                    {!rewriteResult && !rewriting && (
+                      <div className="p-6 text-center rounded-lg border border-dashed border-[#26262e] text-[#6b6b7a] space-y-2">
+                        <Sparkles className="w-6 h-6 mx-auto text-blue-400 opacity-60" />
+                        <div className="text-xs font-medium text-[#d4d4d8]">No alternative ending generated yet</div>
+                        <div className="text-[11px] text-[#71717a] max-w-sm mx-auto">
+                          Select a target dimension above and click &quot;Draft Alternative&quot; to synthesize an ending tailored to this analysis.
+                        </div>
+                      </div>
+                    )}
 
                     {/* Revision Output Comparison */}
                     {rewriteResult && (

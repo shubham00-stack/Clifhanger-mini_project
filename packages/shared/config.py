@@ -27,6 +27,11 @@ class Settings(BaseModel):
     nvidia_api_key: str = Field(default_factory=lambda: os.getenv("NVIDIA_API_KEY", ""))
     nvidia_base_url: str = Field(default_factory=lambda: os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"))
 
+    # Groq Provider Settings
+    groq_api_key: str = Field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
+    groq_base_url: str = Field(default_factory=lambda: os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"))
+    groq_model: str = Field(default_factory=lambda: os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"))
+
     # Configurable NVIDIA NIM Models (Section 4.2)
     model_primary_narrative: str = Field(
         default_factory=lambda: os.getenv("MODEL_PRIMARY_NARRATIVE", "nvidia/nemotron-3-nano-omni-30b-a3b-instruct")

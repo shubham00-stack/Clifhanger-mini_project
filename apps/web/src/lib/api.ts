@@ -50,6 +50,10 @@ export interface RewriteResult {
   content: string;
   is_consistent: boolean;
   validation_critique?: string;
+  preserved_facts?: Record<string, any>;
+  suspense_mechanism?: string;
+  unsupported_additions?: string[];
+  is_rejected?: boolean;
 }
 
 export interface SceneRecord {
@@ -125,7 +129,8 @@ export class ApiClient {
   static async requestRewrite(
     analysisId: string,
     targetDimension: string = "urgency",
-    style: string = "intensified"
+    style: string = "intensified",
+    storyText?: string
   ): Promise<RewriteResult> {
     return this.request<RewriteResult>(`/api/analyses/${analysisId}/rewrite`, {
       method: "POST",
@@ -134,6 +139,7 @@ export class ApiClient {
         analysis_id: analysisId,
         target_dimension: targetDimension,
         style: style,
+        story_text: storyText,
       }),
     });
   }

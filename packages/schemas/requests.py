@@ -29,6 +29,8 @@ class AnalysisResponse(BaseModel):
     open_questions: List[str] = Field(default_factory=list)
     model_name: str
     prompt_version: str = "v1.0.0"
+    story_text: Optional[str] = Field(None, description="Original raw manuscript or scene text")
+    ending_segment: Optional[str] = Field(None, description="Target ending boundary segment")
 
 
 class RewriteRequest(BaseModel):
@@ -36,6 +38,7 @@ class RewriteRequest(BaseModel):
     analysis_id: UUID
     target_dimension: DimensionName = Field("urgency", description="Dimension to elevate")
     style: str = Field("intensified", description="Dramatic style modifier")
+    story_text: Optional[str] = Field(None, description="Optional current story text override")
 
 
 class RewriteResponse(BaseModel):
@@ -49,6 +52,10 @@ class RewriteResponse(BaseModel):
     content: str
     is_consistent: bool
     validation_critique: str
+    preserved_facts: Dict[str, Any] = Field(default_factory=dict, description="Inventory of preserved scene facts")
+    suspense_mechanism: Optional[str] = Field(None, description="Explanation of how suspense was elevated using established facts")
+    unsupported_additions: List[str] = Field(default_factory=list, description="Any unsupported facts or entities identified during validation")
+    is_rejected: bool = Field(False, description="Whether the alternative was rejected due to consistency violations")
 
 
 class BenchmarkEvaluationResult(BaseModel):

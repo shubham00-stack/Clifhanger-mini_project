@@ -16,8 +16,8 @@ def mcp_generate_rewrite(
     """Generates an alternative cliffhanger ending tailored to elevate a target dimension."""
     content = (
         rewrite_text or
-        "Elena jammed the emergency crowbar between the closing hydraulic seals. "
-        "A metallic shriek rent the air as the countdown reached 00:01."
+        "Elena locked eyes with the director across the console as the transmitter tape slipped from the spool. "
+        "Before either could reach for the logbook, the carrier frequency shifted in a single sharp burst."
     )
     return {
         "project_id": str(project_id),
@@ -25,6 +25,11 @@ def mcp_generate_rewrite(
         "content": content,
         "predicted_score": 82.5,
         "is_consistent": True,
+        "preserved_facts": {
+            "characters": ["Elena", "Director"],
+            "location": "Console room",
+            "objects_used": ["transmitter tape", "logbook"],
+        },
     }
 
 

@@ -20,6 +20,7 @@ logger = get_logger("api.analysis")
 router = APIRouter(prefix="/api", tags=["Analysis"])
 
 ANALYSES_STORE: Dict[UUID, AnalysisResponse] = {}
+ANALYSES_TEXT_STORE: Dict[UUID, Dict[str, Any]] = {}
 PROJECT_ASSETS_STORE: Dict[UUID, List[Dict[str, Any]]] = {}
 PROJECT_SCENES_STORE: Dict[UUID, List[Dict[str, Any]]] = {}
 
@@ -102,9 +103,16 @@ def analyze_cliffhanger(project_id: UUID, payload: AnalysisRequest):
         open_questions=open_questions,
         model_name=payload.model_name or client.primary_model,
         prompt_version=PROMPT_VERSION,
+        story_text=story_text,
+        ending_segment=ending_segment,
     )
 
     ANALYSES_STORE[analysis_id] = response
+    ANALYSES_TEXT_STORE[analysis_id] = {
+        "story_text": story_text,
+        "ending_segment": ending_segment,
+        "project_id": project_id,
+    }
     return response
 
 
